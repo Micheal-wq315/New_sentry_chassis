@@ -108,9 +108,9 @@ void GimbalInit()
                 .IntegralLimit = 2000,
                 .MaxOut = 20000,
             },
-            .other_angle_feedback_ptr = &gimbal_IMU_data->YawTotalAngle,
+            .other_angle_feedback_ptr = &Gimbal_IMU_data->YawTotalAngle,
             // 还需要增加角速度额外反馈指针,注意方向,ins_task.md中有c板的bodyframe坐标系说明
-            .other_speed_feedback_ptr = &gimbal_IMU_data->Gyro[2],
+            .other_speed_feedback_ptr = &Gimbal_IMU_data->Gyro[2],
         },
         .controller_setting_init_config = {
             .angle_feedback_source = MOTOR_FEED,
@@ -144,9 +144,9 @@ void GimbalInit()
                 .IntegralLimit = 8500,
                 .MaxOut = 20000,
             },
-            .other_angle_feedback_ptr = &gimbal_IMU_data->Pitch,
+            .other_angle_feedback_ptr = &Gimbal_IMU_data->Pitch,
             // 还需要增加角速度额外反馈指针,注意方向,ins_task.md中有c板的bodyframe坐标系说明
-            .other_speed_feedback_ptr = (&gimbal_IMU_data->Gyro[0]),
+            .other_speed_feedback_ptr = (&Gimbal_IMU_Gata->Gyro[0]),
         },
         .controller_setting_init_config = {
             .angle_feedback_source = MOTOR_FEED,
@@ -618,14 +618,10 @@ void GimbalTask()
     case GIMBAL_VISION: 
         DJIMotorEnable(yaw_l_motor);
         DJIMotorEnable(pitch_l_motor);
-        DJIMotorEnable(yaw_r_motor);   
-        DJIMotorEnable(pitch_r_motor);
         DMMotorEnable(Gimbal_Base);
         DJIMotorChangeFeed(yaw_l_motor, ANGLE_LOOP, MOTOR_FEED);
-        DJIMotorChangeFeed(yaw_r_motor, ANGLE_LOOP, MOTOR_FEED);
         DJIMotorChangeFeed(pitch_l_motor, ANGLE_LOOP, MOTOR_FEED);
-        DJIMotorChangeFeed(pitch_r_motor, ANGLE_LOOP, MOTOR_FEED);
-
+    
         LIMIT_MIN_MAX(vision_l_yaw_tar, YAW_L_LIMIT_MIN , YAW_L_LIMIT_MAX );
         LIMIT_MIN_MAX(vision_l_pitch_tar, PITCH_L_LIMIT_MIN , PITCH_L_LIMIT_MAX);
 

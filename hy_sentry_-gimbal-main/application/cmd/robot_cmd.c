@@ -198,94 +198,6 @@ static void VisionRadaControlSet()
     if(referee_recv_data->GameState.game_progress == 0 || referee_recv_data->GameState.game_progress == 5|| referee_recv_data->GameState.game_progress == 1|| referee_recv_data->GameState.game_progress == 2|| referee_recv_data->GameState.game_progress == 3)
         gimbal_cmd_send.gimbal_angle = -1;
 
-    // if(vision_recv_data_->fire_mode == NO_FIRE)  
-    // {
-    //     shoot_cmd_send.friction_mode = FRICTION_OFF;
-    //     shoot_cmd_send.shoot_mode = SHOOT_OFF;
-    //     shoot_cmd_send.load_mode = LOAD_STOP;    
-    // }
-    // // else if(vision_recv_data_->fire_mode == AUTO_AIM)
-    // // {
-    // //     // if(gimbal_cmd_send.yaw>-0.13f&&gimbal_cmd_send.yaw<-0.13f)
-    // //     // {
-    // //     shoot_cmd_send.friction_mode = FRICTION_ON;
-    // //     shoot_cmd_send.load_mode = LOAD_BURSTFIRE;
-    // //     shoot_cmd_send.shoot_rate = 10;
-    // //     kkk = 1;
-    // //     // }
-    // //     // else{
-    // //     //     shoot_cmd_send.load_mode = LOAD_STOP;
-    // //     //     shoot_cmd_send.shoot_rate = 10;
-    // //     // }
-    // //     // // if(gimbal_cmd_send.yaw >-0.1f&&gimbal_cmd_send.yaw<0.1f)
-    // //     // {
-    // //     //     shoot_cmd_send.load_mode = LOAD_BURSTFIRE;
-    // //     //     shoot_cmd_send.shoot_rate = 10;
-    // //     // }    
-    // // }
-    // else if (vision_recv_data_->target_state  == TRACKING)
-    // {
-    //     // if(vision_recv_data_->fire_mode == AUTO_AIM){
-    //     //     shoot_cmd_send.friction_mode = FRICTION_ON;
-    //     //     shoot_cmd_send.load_mode = LOAD_BURSTFIRE;
-    //     //     shoot_cmd_send.shoot_rate = 15;
-    //     // }
-    //     // else
-    //     // {
-    //     //     shoot_cmd_send.friction_mode = FRICTION_OFF;
-    //     //     shoot_cmd_send.load_mode = LOAD_STOP;
-    //     //     shoot_cmd_send.shoot_rate = 15;
-    //     // }
-    // //自动火控
-    //     // if(vision_recv_data_->yaw<0.07f&&vision_recv_data_->yaw>-0.07f){
-    //     //     shoot_cmd_send.friction_mode = FRICTION_ON;
-    //     //     shoot_cmd_send.load_mode = LOAD_BURSTFIRE;
-    //     //     shoot_cmd_send.shoot_rate = 15;
-    //     //     // if(referee_recv_data->PowerHeatData.shooter_17mm_1_barrel_heat <= 0){
-    //     //     //     shoot_cmd_send.friction_mode = FRICTION_OFF;
-    //     //     //     shoot_cmd_send.load_mode = LOAD_STOP;
-    //     //     //     shoot_cmd_send.shoot_rate = 10;
-    //     //     // }
-    //     // }
-    //     // else{
-    //     //     shoot_cmd_send.friction_mode = FRICTION_OFF;
-    //     //     shoot_cmd_send.load_mode = LOAD_STOP;
-    //     //     shoot_cmd_send.shoot_rate = 15;
-    //     // }
-    // }
-
-    // else{
-    //         shoot_cmd_send.load_mode = LOAD_STOP;
-    // } 
-    //调试使用遥控代替视觉cmd
-    // gimbal_cmd_send.yaw -= 0.002f * (float)rc_data[TEMP].rc.rocker_l_;
-    // gimbal_cmd_send.pitch += 0.0005f * (float)rc_data[TEMP].rc.rocker_l1;
-    // gimbal_cmd_send.gimbal_angle -= 0.0010f * (float)rc_data[TEMP].rc.rocker_r_; // 母云台角度反馈
-    // if(rc_data[TEMP].rc.switch_right == 1) 
-    //     vision_recv_data_->target_state = TRACKING;
-    // else 
-    //     vision_recv_data_->target_state = NO_TARGET;
-    // shoot_cmd_send.shoot_rate = 10;
-    // 摩擦轮控制,拨轮向上打为负,向下为正
-    // if (rc_data[TEMP].rc.dial < -100) // 向上超过100,打开摩擦轮
-    //     shoot_cmd_send.friction_mode = FRICTION_ON;
-    // else
-    //     shoot_cmd_send.friction_mode = FRICTION_OFF;
-    // // 拨弹控制,遥控器固定为一种拨弹模式,可自行选择 
-    // if (rc_data[TEMP].rc.dial < -500)
-    //     shoot_cmd_send.load_mode = LOAD_BURSTFIRE;
-    // else
-    //     shoot_cmd_send.load_mode = LOAD_STOP;
-    // // 射频控制,固定每秒1发,后续可以根据左侧拨轮的值大小切换射频,
-    // shoot_cmd_send.shoot_rate = 10;
-    
-
-    // if(referee_recv_data->PowerHeatData.shooter_17mm_2_barrel_heat == 0){
-    //     shoot_cmd_send.friction_mode = FRICTION_OFF;s
-    //     shoot_cmd_send.load_mode = LOAD_STOP;
-    //     shoot_cmd_send.shoot_rate = 15;
-    // }
-
     if(vision_recv_data_->target_state == NO_TARGET)  
     {
         shoot_cmd_send.friction_mode = FRICTION_OFF;
@@ -305,6 +217,8 @@ static void VisionRadaControlSet()
     }
     shoot_cmd_send.friction_mode = FRICTION_ON;
         shoot_cmd_send.shoot_mode = SHOOT_ON;
+
+    //比赛开始时启动
 //    if(referee_recv_data->GameState.game_progress == 0 || referee_recv_data->GameState.game_progress == 5|| referee_recv_data->GameState.game_progress == 1|| referee_recv_data->GameState.game_progress == 2|| referee_recv_data->GameState.game_progress == 3)
 //     {
 //        shoot_cmd_send.friction_mode = FRICTION_OFF;
