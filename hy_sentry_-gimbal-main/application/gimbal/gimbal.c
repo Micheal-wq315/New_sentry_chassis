@@ -81,7 +81,7 @@ void GimbalInit()
     float gimbal_base_angle_feed_ptr = gimbal_IMU_data->YawTotalAngle;
 
     Gimbal_IMU_data = INS_ptr();
-
+ 
     // YAW
     Motor_Init_Config_s yaw_config = {
         .can_init_config = {
@@ -128,8 +128,8 @@ void GimbalInit()
         },
         .controller_param_init_config = {
             .angle_PID = {
-                .Kp = 160, //  Me:20
-                .Ki = 84, // 3
+                .Kp = 164, //  Me:20
+                .Ki = 80, // 3
                 .Kd = 0,
                 .Improve = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement,
                 .IntegralLimit = 2000, // 30
