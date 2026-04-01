@@ -172,7 +172,6 @@ void GimbalInit()
     .can_init_config.rx_id = 0x10,
     .can_init_config.tx_id = 0x20F,
 
-
     .controller_param_init_config = {
         .angle_PID = {
             .Kp = 0.09, // 0.06
