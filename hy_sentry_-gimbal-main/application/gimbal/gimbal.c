@@ -37,7 +37,6 @@
 static attitude_t *gimbal_IMU_data; // 云台IMU数据
 static attitude_T *Gimbal_IMU_data; // 云台IMU数据
 static DJIMotorInstance *yaw_l_motor, *yaw_r_motor, *pitch_l_motor, *pitch_r_motor; // 云台电机实例
-static DMMotorInstance  *Gimbal_Base;
 static float vision_l_yaw_tar; 
 static float vision_l_pitch_tar;             
 static float Gimbal_T = 0.0f; // 云台扫描周期
@@ -62,20 +61,10 @@ static int kkkk=0;
 */
 static AimOptimizer_t aim_optimizer;
 static float optimized_yaw, optimized_pitch;
-
 /*
     Yaw 预测控制器变量
 */
 static YawPredictor_t yaw_predictor;  // ← 新增：Yaw 轴预测控制器实例
-
-static void DMMotor_Enable_Can(DMMotor_Mode_e cmd, DMMotorInstance *motor)
-{
-    memset(motor->motor_can_instace->tx_buff, 0xff, 7);  // 发送电机指令的时候前面7bytes都是0xff
-    motor->motor_can_instace->tx_buff[7] = (uint8_t)cmd; // 最后一位是命令id
-    CANTransmit(motor->motor_can_instace, 1);
-    memset(motor->motor_can_instace->tx_buff, 0, 8);    //清空
-}
-
 void GimbalInit()
 {   
     float gimbal_base_angle_feed_ptr = gimbal_IMU_data->YawTotalAngle;
@@ -146,7 +135,7 @@ void GimbalInit()
             },
             .other_angle_feedback_ptr = &Gimbal_IMU_data->Pitch,
             // 还需要增加角速度额外反馈指针,注意方向,ins_task.md中有c板的bodyframe坐标系说明
-            .other_speed_feedback_ptr = (&Gimbal_IMU_Gata->Gyro[0]),
+            .other_speed_feedback_ptr = (&Gimbal_IMU_data->Gyro[0]),
         },
         .controller_setting_init_config = {
             .angle_feedback_source = MOTOR_FEED,
@@ -157,46 +146,6 @@ void GimbalInit()
         },
         .motor_type = GM6020,
     };  
- 
-    Motor_Init_Config_s DMmotor_Motor_Config = {
-    .controller_setting_init_config.angle_feedback_source = OTHER_FEED,
-    .controller_setting_init_config.speed_feedback_source = MOTOR_FEED,
-    .controller_setting_init_config.close_loop_type = ANGLE_LOOP,
-    .controller_setting_init_config.feedback_reverse_flag = FEEDBACK_DIRECTION_NORMAL,
-    .controller_setting_init_config.feedforward_flag = SPEED_FEEDFORWARD,
-    .controller_setting_init_config.motor_reverse_flag = MOTOR_DIRECTION_NORMAL,
-    .controller_setting_init_config.outer_loop_type = ANGLE_LOOP | SPEED_LOOP,
-    .can_init_config.can_handle = &hcan1,
-    // .can_init_config.can_module_callback = &DMMotorLostCallback,
-    // .can_init_config.id = (void *)0x00,
-    .can_init_config.rx_id = 0x10,
-    .can_init_config.tx_id = 0x20F,
-
-    .controller_param_init_config = {
-        .angle_PID = {
-            .Kp = 0.09, // 0.06
-            .Ki = 0.05, // 0.05
-            .Kd = 0,
-            .MaxOut = 30,   // 30
-            .IntegralLimit = 10,
-            .Output_LPF_RC = 0.00649999983,
-            .Improve = PID_Integral_Limit | PID_Derivative_On_Measurement | PID_OutputFilter
-        },
-
-        .speed_PID = {
-            .Kp = 5,
-            .Ki = 0.7,
-            .Kd = 0,
-            .MaxOut = 30,   // 50
-            .IntegralLimit = 15,
-            .IntegralLimit = PID_Integral_Limit | PID_Derivative_On_Measurement
-        },
-        .other_angle_feedback_ptr = &Gimbal_IMU_data->YawTotalAngle,
-            // 还需要增加角速度额外反馈指针,注意方向,ins_task.md中有c板的bodyframe坐标系说明
-        .other_speed_feedback_ptr = &Gimbal_IMU_data->Gyro[0],
-        .speed_feedforward_ptr = &Gimbal_IMU_data->Gyro[0],
-    }
-};
 
     /*
         抬头参数
@@ -219,8 +168,6 @@ void GimbalInit()
     gimbal_IMU_data = INS_Init(); 
     Gimbal_IMU_data = INS_Init(); 
 
-    Gimbal_Base = DMMotorInit(&DMmotor_Motor_Config);
-
     // ========== 新增：初始化 Yaw 预测控制器 ==========
     // 参数：dt=5ms (200Hz 控制周期), 预测时间=40ms (补偿系统延迟)
     YawPredictor_Init(&yaw_predictor, 0.005f, 0.010f);
@@ -234,33 +181,33 @@ void GimbalInit()
  * @return 
  */
 
-static void YawAngleCalculate()
-{
-    static float angle, last_angle, temp, rad_sum;
-    angle = Gimbal_Base->measure.position; // 从云台获取的当前yaw电机角度
+// static void YawAngleCalculate()
+// {
+//     static float angle, last_angle, temp, rad_sum;
+//     angle = Gimbal_Base->measure.position; // 从云台获取的当前yaw电机角度
     
-    if(fabs(angle - last_angle) > 0.0001)
-    {
-        if((angle - last_angle) < -12.5)
-        {
-            rad_sum += 25 + angle - last_angle;
-        }
-        else if((angle - last_angle) >  12.5)
-        {
-            rad_sum += 25 + last_angle - angle;
-        }
-        else
-        {
-            rad_sum += angle - last_angle;
-        }
-    }
-    Yaw_angle_sum = rad_sum * RAD_2_DEGREE;
-    temp = fmodf(Yaw_angle_sum, 360.0);
-    Yaw_single_angle = fabs(temp);
-    Gimbal_Base->measure.single_angle = Yaw_single_angle;
-    Gimbal_Base->measure.total_angle = Yaw_angle_sum;
-    last_angle = angle;
-}
+//     if(fabs(angle - last_angle) > 0.0001)
+//     {
+//         if((angle - last_angle) < -12.5)
+//         {
+//             rad_sum += 25 + angle - last_angle;
+//         }
+//         else if((angle - last_angle) >  12.5)
+//         {
+//             rad_sum += 25 + last_angle - angle;
+//         }
+//         else
+//         {
+//             rad_sum += angle - last_angle;
+//         }
+//     }
+//     Yaw_angle_sum = rad_sum * RAD_2_DEGREE;
+//     temp = fmodf(Yaw_angle_sum, 360.0);
+//     Yaw_single_angle = fabs(temp);
+//     Gimbal_Base->measure.single_angle = Yaw_single_angle;
+//     Gimbal_Base->measure.total_angle = Yaw_angle_sum;
+//     last_angle = angle;
+// }
 
 /**
  * @brief ins数据获取,从惯导模块获取数据，传送给视觉
@@ -316,48 +263,6 @@ static void VisionAngleCalc()
 
 static float temp_statue;
 
-static void YawTrackingControl()
-{
-    // ========== 使用预测控制器替代原有逻辑 ==========
-    
-    // 1. 计算 yaw 误差（目标角度即为误差），需要实装测量来确定正负
-    float yaw_error = gimbal_cmd_recv.yaw;
-    
-    // 2. 使用预测控制器计算 Gimbal_T 增量
-    float delta_gimbal_T = YawPredictor_Update(&yaw_predictor, 
-                                               yaw_error, 
-                                               gimbal_cmd_recv.yaw);
-
-    // 3. 更新 Gimbal_T
-    Gimbal_T += delta_gimbal_T;
-
-    // ============ 原有逻辑注释 ==============
-    /*
-    //方案一，大 yaw 响应会相对慢一些
-    if(abs(gimbal_cmd_recv.yaw)>0.15)
-    {
-        if(gimbal_cmd_recv.yaw>0) 
-        {
-            Gimbal_T += GimbalDirection;
-        }
-        else
-        {
-            Gimbal_T -= GimbalDirection;
-        }
-    }
-
-    //方案二，大 yaw 响应快一些，但会导致震荡现象
-    if(gimbal_cmd_recv.yaw>0)
-    {
-        Gimbal_T += GimbalDirection*(0.3-abs(gimbal_cmd_recv.yaw))*(0.3-abs(gimbal_cmd_recv.yaw))/0.09;
-    }
-    else
-    {
-        Gimbal_T -= GimbalDirection*(0.3-abs(gimbal_cmd_recv.yaw))*(0.3-abs(gimbal_cmd_recv.yaw))/0.09;
-    }
-    */
-}
-
 /** 
  * @brief 自瞄优化版本
  * 使用说明：
@@ -396,16 +301,6 @@ static void GimbalSessionStart()
 
         if(diff_time > 500)
         {
-            // if(wait_time <= 0){
-            //     if(gimbal_cmd_recv.gimbal_angle == 1)
-            //         Gimbal_T = arm_sin_f32(time_T * 0.2f) * 80.0f + delta_theta;
-            //     else if (gimbal_cmd_recv.gimbal_angle == -1)
-            //     {
-
-            //     }
-            //     wait_time = 0;              
-            // }
-
             if(gimbal_cmd_recv.gimbal_angle == 1)
             {
                 time_tt += 0.005f;
@@ -425,63 +320,6 @@ static void GimbalSessionStart()
         }
     }
     else{//自瞄逻辑实现
-        // // 检测目标状态变化，只有持续 500ms 确认为 TRACKING 才执行自瞄
-        // if(vision_recv_data_r.target_state == TRACKING)
-        // {
-        //     // 第一次检测到目标，记录时间
-        //     if(tracking_start_time == 0)
-        //     {
-        //         tracking_start_time = time;
-        //     }
-
-        //     // 检查是否已经持续 500ms
-        //     if((time - tracking_start_time) >= 500)
-        //     {
-        //         confirmed_tracking = 1;  // 确认进入跟踪状态
-        //     }
-        // }
-        // else
-        // {
-        //     // 如果是其他状态（如 READY_TO_FIRE），重置计时
-        //     tracking_start_time = 0;
-        //     confirmed_tracking = 0;
-        // }
-
-        // // 只有在确认的跟踪状态下才执行自瞄逻辑
-        // if(confirmed_tracking)
-        // {
-        //     // vision_l_yaw_tar = yaw_l_motor->measure.total_angle + gimbal_cmd_recv.yaw*RAD_2_DEGREE*0.4 + gimbal_cmd_recv.yaw_vel*10*(-1);
-        //     // vision_l_pitch_tar = pitch_l_motor->measure.total_angle + (gimbal_cmd_recv.pitch+0.125)*18*(-1);
-
-        //     // 1. 准备原始输入数据
-        //     float raw_yaw_input = gimbal_cmd_recv.yaw * RAD_2_DEGREE *0.2; // 将输入转换为角度误差
-        //     float raw_pitch_input = (gimbal_cmd_recv.pitch + 0.125f) * 20 *(-1.0f);
-
-        //     // 2. 执行优化处理（滤波 + 预测）
-        //     AimOptimizer_Process(&aim_optimizer, 
-        //                         raw_yaw_input, raw_pitch_input,
-        //                         &optimized_yaw, &optimized_pitch);
-
-        //     // 3. 使用优化后的数据计算目标角度
-        //     // vision_l_yaw_tar = yaw_l_motor->measure.total_angle 
-        //     //                   + optimized_yaw * 0.2f
-        //     //                   + gimbal_cmd_recv.yaw_vel * 14.0f * (-1.0f);
-
-        //     vision_l_yaw_tar = yaw_l_motor->measure.total_angle 
-        //                       + optimized_yaw * 0.2f;
-
-        //     vision_l_pitch_tar = pitch_l_motor->measure.total_angle 
-        //                         + optimized_pitch *1.2f;
-        // }
-        // vision_l_yaw_tar = yaw_l_motor->measure.total_angle + gimbal_cmd_recv.yaw*RAD_2_DEGREE*0.2 + gimbal_cmd_recv.yaw_vel*10*(-1);
-        // delta_pitch = (gimbal_cmd_recv.pitch+0.089f)*200*(-1);
-        // kkkk++;
-        // if(fabs(delta_pitch)>=0.8) delta_pitch = 0.8*delta_pitch/fabs(delta_pitch);
-        
-        // vision_l_pitch_tar = pitch_l_motor->measure.total_angle;
-
-        // vision_l_pitch_tar += delta_pitch;
-        // delta_theta = gimbal_cmd_recv.yaw * RAD_2_DEGREE * 0.2f; // 计算当前误差对应的角度增量
         float raw_yaw_input = gimbal_cmd_recv.yaw * RAD_2_DEGREE *0.2 + gimbal_cmd_recv.yaw_vel*5*(-1); // 将输入转换为角度误差
         float raw_pitch_input = gimbal_cmd_recv.pitch* 30 *(-1.0f);
         // 2. 执行优化处理(滤波 + 预测)
@@ -494,12 +332,7 @@ static void GimbalSessionStart()
         AimOptimizer_Process(&aim_optimizer, 
                                 raw_yaw_input, raw_pitch_input,
                                 &optimized_yaw, &optimized_pitch);
-
-            // 3. 使用优化后的数据计算目标角度
-            // vision_l_yaw_tar = yaw_l_motor->measure.total_angle s
-            //                   + optimized_yaw * 0.2f
-            //                   + gimbal_cmd_recv.yaw_vel * 14.0f * (-1.0f);
-
+                                
         vision_l_yaw_tar = yaw_l_motor->measure.total_angle
                               + optimized_yaw * 0.38f;
 
@@ -536,14 +369,7 @@ void GimbalTask()
     // }
     
     yaw_l_motor->stop_flag = MOTOR_ENALBED;
-    time_t++;
-    if(time_t%500 == 0)
-    {
-        DMMotor_Enable_Can(DM_CMD_MOTOR_MODE, Gimbal_Base);
-    }
-
     gimbal_IMU_Task();
-    // YawAngleCalculate();
     temp_statue = gimbal_cmd_recv.gimbal_mode;
     if(gimbal_cmd_recv.gimbal_mode == GIMBAL_VISION)
     {   
@@ -618,7 +444,6 @@ void GimbalTask()
     case GIMBAL_VISION: 
         DJIMotorEnable(yaw_l_motor);
         DJIMotorEnable(pitch_l_motor);
-        DMMotorEnable(Gimbal_Base);
         DJIMotorChangeFeed(yaw_l_motor, ANGLE_LOOP, MOTOR_FEED);
         DJIMotorChangeFeed(pitch_l_motor, ANGLE_LOOP, MOTOR_FEED);
     
@@ -627,8 +452,6 @@ void GimbalTask()
 
         DJIMotorSetRef(yaw_l_motor, vision_l_yaw_tar);
         DJIMotorSetRef(pitch_l_motor, vision_l_pitch_tar);
-
-        DMMotorSetRef (Gimbal_Base, gimbal_cmd_recv.gimbal_angle);
 
     default:
         break;
