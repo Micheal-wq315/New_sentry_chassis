@@ -35,6 +35,6 @@ New_sentry_chassis/
 │   ├── Core/                      # 核心 MCU 依赖与启动文件
 │   ├── application/               # 应用层任务 (底盘、云台、通信)
 │   ├── USB_DEVICE/                # USB 虚拟串口 / 通信模块
-│   └── README.md                  # (建议补充)
+│   └── README.md                  
 │
-└── README.md                      # 本文件 (你可以放置此内容)
+└── README.md                      # 本文件 
