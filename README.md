@@ -1,8 +1,9 @@
 # New_sentry_chassis
 
-> 跃鹿战队 RoboMaster 哨兵机器人运动控制代码仓库  
+> 参考跃鹿战队 RoboMaster 哨兵机器人运动控制代码仓库  
+> **战队**：洪鹰战队
 > **赛季**：2025 – 2026  
-> **硬件平台**：STM32H7 系列 + FreeRTOS  
+> **硬件平台**：STM32H7 系列 + STM32f407系列 + FreeRTOS  
 > **通信**：CAN / USB / 航模遥控器 (DT7)
 
 ---
