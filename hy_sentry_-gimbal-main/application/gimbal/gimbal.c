@@ -102,8 +102,8 @@ void GimbalInit()
             .other_speed_feedback_ptr = &Gimbal_IMU_data->Gyro[2],
         },
         .controller_setting_init_config = {
-            .angle_feedback_source = MOTOR_FEED,
-            .speed_feedback_source = MOTOR_FEED,
+            .angle_feedback_source = OTHER_FEED,
+            .speed_feedback_source = OTHER_FEED,
             .outer_loop_type = ANGLE_LOOP,
             .close_loop_type = ANGLE_LOOP | SPEED_LOOP,
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL,
@@ -152,12 +152,8 @@ void GimbalInit()
     */
     // 电机对total_angle闭环,上电时为零,会保持静止,收到遥控器数据再动
     yaw_l_motor = DJIMotorInit(&yaw_config);
-    // yaw_config.can_init_config.can_handle = &hcan2;
-    // yaw_r_motor = DJIMotorInit(&yaw_config);
 
     pitch_l_motor = DJIMotorInit(&pitch_config);
-    // pitch_config.can_init_config.can_handle = &hcan2;
-    // pitch_r_motor = DJIMotorInit(&pitch_config);
  
     gimbal_pub = PubRegister("gimbal_feed", sizeof(Gimbal_Upload_Data_s));
     gimbal_sub = SubRegister("gimbal_cmd", sizeof(Gimbal_Ctrl_Cmd_s));
@@ -332,7 +328,7 @@ static void GimbalSessionStart()
         AimOptimizer_Process(&aim_optimizer, 
                                 raw_yaw_input, raw_pitch_input,
                                 &optimized_yaw, &optimized_pitch);
-                                
+
         vision_l_yaw_tar = yaw_l_motor->measure.total_angle
                               + optimized_yaw * 0.38f;
 
@@ -346,9 +342,8 @@ static void GimbalSessionStart()
     gimbal_cmd_recv.gimbal_angle = Gimbal_T;
     last_time = time;
 }
-
 /**
- * @brief 右头未识别到时扫描
+ * @brief 改变电机反馈模式
  * @return  
  */
 
@@ -360,13 +355,6 @@ void GimbalTask()
     SubGetMessage(gimbal_sub, &gimbal_cmd_recv);
     SubGetMessage(vision_recv_data_sub_l, &vision_recv_data_l);
     SubGetMessage(vision_recv_data_sub_r, &vision_recv_data_r);
-
-    //为了避免Gimbal_Base在云台上电时失能，每次都要判断一下，如果是失能状态就使能它，保持云台IMU数据的更新，保证云台的稳定性和响应速度
-    // if(Gimbal_Base->stop_flag == MOTOR_STOP)
-    // {
-    //     Gimbal_Base->stop_flag = MOTOR_ENALBED;
-    //     DJIMotorEnable(Gimbal_Base);
-    // }
     
     yaw_l_motor->stop_flag = MOTOR_ENALBED;
     gimbal_IMU_Task();
@@ -377,11 +365,6 @@ void GimbalTask()
         vision_gimbal_data.Vision_l_pitch_tar = gimbal_cmd_recv.pitch;
         vision_gimbal_data.yaw_r_motor_angle = yaw_l_motor->measure.total_angle;
         vision_gimbal_data.pitch_r_motor_angle = pitch_l_motor->measure.total_angle;
-
-        // vision_gimbal_data.Vision_r_yaw_tar = gimbal_cmd_recv.yaw;
-        // vision_gimbal_data.Vision_r_pitch_tar = gimbal_cmd_recv.pitch;
-        // vision_gimbal_data.yaw_r_motor_angle = yaw_r_motor->measure.total_angle;
-        // vision_gimbal_data.pitch_r_motor_angle = pitch_r_motor->measure.total_angle;
 
         vision_gimbal_data.vision_statue = GIMBAL_VISION;
     }
